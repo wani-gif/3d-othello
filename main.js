@@ -1,7 +1,7 @@
 // main.js
 
-import * as THREE from "three";
-import { OrbitControls } from "./jsm/controls/OrbitControls.js";
+import * as THREE from "./build/three.module.js"; // 相対パスに戻す
+import { OrbitControls } from "./jsm/controls/OrbitControls.js"; // 相対パスに戻す
 
 // --- グローバル変数と初期設定 ---
 let scene, camera, renderer, controls;
@@ -24,18 +24,6 @@ const PLAYER_PLAYER = -1;
 let currentSelectedSize = 8;
 let cpuDifficulty = 1;
 
-// ★追加: 駒のアニメーション関連 ★
-let flippingPieces = []; // アニメーション中の駒を格納する配列
-const FLIP_DURATION = 300; // 駒がひっくり返るアニメーションのミリ秒
-
-// ★追加: UI要素の参照 ★
-let passMessageDiv;
-let cpuThinkingMessageDiv;
-let gameOverScreen;
-let gameOverTitle;
-let gameOverScore;
-let playAgainButton;
-
 const directions = [];
 for (let dx = -1; dx <= 1; dx++) {
     for (let dy = -1; dy <= 1; dy++) {
@@ -54,9 +42,11 @@ function initGame(selectedGridSize) {
     offset = (gridSize - 1) / 2 * cellSize;
 
     if (scene) {
+        // シーンからすべてのオブジェクトを削除 (メモリリーク防止)
         while(scene.children.length > 0){
             scene.remove(scene.children[0]);
         }
+        // レンダラーのDOM要素を削除 (canvas要素)
         if (renderer && renderer.domElement.parentNode) {
             renderer.domElement.parentNode.removeChild(renderer.domElement);
         }
@@ -144,7 +134,7 @@ function initGame(selectedGridSize) {
     const outerBoxGeometry = new THREE.BufferGeometry().setFromPoints(points);
     outerBoxGeometry.setIndex(indices);
     const outerBoxMaterial = new THREE.LineBasicMaterial({
-        color: 0x00ff00,
+        color: 0x00ff00, // 緑色
         transparent: true,
         opacity: 0.5
     });
@@ -152,11 +142,11 @@ function initGame(selectedGridSize) {
     scene.add(outerBox);
 
     const outerBoxMaterialThicker = new THREE.LineBasicMaterial({
-        color: 0x00ff00,
+        color: 0x00ff00, // 緑色
         transparent: true,
         opacity: 0.5
     });
-    const pointsThicker = points.map(v => v.clone().multiplyScalar(1.01));
+    const pointsThicker = points.map(v => v.clone().multiplyScalar(1.01)); // 少し外側に拡大
     const outerBoxGeometryThicker = new THREE.BufferGeometry().setFromPoints(pointsThicker);
     outerBoxGeometryThicker.setIndex(indices);
     const outerBoxThicker = new THREE.LineSegments(outerBoxGeometryThicker, outerBoxMaterialThicker);
@@ -639,6 +629,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// ボードサイズ選択後の処理関数
 function selectBoardSize(size) {
     currentSelectedSize = size;
     const boardSizeSelection = document.getElementById('board-size-selection');
@@ -646,22 +637,23 @@ function selectBoardSize(size) {
     const startScreenTitle = document.getElementById('start-screen-title');
 
     if (boardSizeSelection) {
-        boardSizeSelection.style.display = 'none';
+        boardSizeSelection.style.display = 'none'; // ボードサイズ選択を非表示
     }
     if (difficultySelection) {
-        difficultySelection.style.display = 'block';
+        difficultySelection.style.display = 'block'; // 難易度選択を表示
     }
     if (startScreenTitle) {
-        startScreenTitle.textContent = `3D オセロ (${size}x${size}x${size})`;
+        startScreenTitle.textContent = `3D オセロ (${size}x${size}x${size})`; // タイトルを更新
     }
 }
 
+// 難易度選択後のゲーム開始処理関数
 function selectDifficultyAndStartGame(difficulty) {
     cpuDifficulty = difficulty;
     const startScreen = document.getElementById('start-screen');
 
     if (startScreen) {
-        startScreen.style.display = 'none';
+        startScreen.style.display = 'none'; // 開始画面を非表示
     }
     if (gameOverScreen) {
         gameOverScreen.style.display = 'none';
@@ -699,18 +691,15 @@ function showStartScreen() {
 
 
     window.removeEventListener('click', handleGameClick);
-    // ゲームをリセットするために、現在のThree.jsシーンをクリア
     if (scene) {
         while(scene.children.length > 0){
             scene.remove(scene.children[0]);
         }
     }
-    // レンダラーのDOM要素を削除 (canvas要素)
     if (renderer && renderer.domElement.parentNode) {
         renderer.domElement.parentNode.removeChild(renderer.domElement);
-        renderer = null; // rendererをnullにして再初期化に備える
+        renderer = null;
     }
-    // その他のゲーム状態もリセット
     board = [];
     pieces = [];
     highlightMeshes = [];
@@ -730,7 +719,7 @@ function showPassMessage() {
         passMessageDiv.style.animation = 'fadeInOut 2s ease-in-out forwards';
         setTimeout(() => {
             passMessageDiv.style.display = 'none';
-        }, 2000); // 2秒後に非表示
+        }, 2000);
     }
 }
 
