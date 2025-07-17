@@ -1,8 +1,8 @@
 // main.js
 
-import * as THREE from "build/three.module.js"; // ★修正: 相対パスの './' を削除★
-import { OrbitControls } from "jsm/controls/OrbitControls.js"; // ★修正: 相対パスの './' を削除★
-
+// 変更後：明示的に相対パス './' を追加
+import * as THREE from "./build/three.module.js"; // ★修正点: './' を追加★
+import { OrbitControls } from "./jsm/controls/OrbitControls.js"; // ★修正点: './' を追加★
 // --- グローバル変数と初期設定 ---
 let scene, camera, renderer, controls;
 let gridSize = 8;
