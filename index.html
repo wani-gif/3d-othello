@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3Dオセロ</title>
+    <base href="/3d-othello/"> 
     <style>
         body { margin: 0; overflow: hidden; font-family: 'Arial', sans-serif; }
         canvas { display: block; }
@@ -142,13 +143,13 @@
 
         /* パスメッセージのスタイル (中央) */
         #pass-message {
-            top: 60%; /* 画面中央 */
+            top: 50%; /* 画面中央 */
             transform: translate(-50%, -50%); /* 中央揃えを考慮 */
         }
 
         /* CPU思考中メッセージのスタイル (中央より少し下) */
         #cpu-thinking-message {
-            top: 40%; /* 画面中央より少し下 */
+            top: 60%; /* 画面中央より少し下 */
             transform: translate(-50%, -50%); /* 中央揃えを考慮 */
         }
 
@@ -258,6 +259,6 @@
         <button id="play-again-button">もう一度プレイ</button>
     </div>
 
-    <script type="module" src="/main.js" defer></script>
+    <script type="module" src="main.js" defer></script>
 </body>
 </html>

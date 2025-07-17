@@ -1,7 +1,7 @@
 // main.js
 
-import * as THREE from "./build/three.module.js"; // 相対パスに戻す
-import { OrbitControls } from "./jsm/controls/OrbitControls.js"; // 相対パスに戻す
+import * as THREE from "build/three.module.js"; // ★修正: 相対パスの './' を削除★
+import { OrbitControls } from "jsm/controls/OrbitControls.js"; // ★修正: 相対パスの './' を削除★
 
 // --- グローバル変数と初期設定 ---
 let scene, camera, renderer, controls;
@@ -24,6 +24,16 @@ const PLAYER_PLAYER = -1;
 let currentSelectedSize = 8;
 let cpuDifficulty = 1;
 
+let flippingPieces = [];
+const FLIP_DURATION = 300;
+
+let passMessageDiv;
+let cpuThinkingMessageDiv;
+let gameOverScreen;
+let gameOverTitle;
+let gameOverScore;
+let playAgainButton;
+
 const directions = [];
 for (let dx = -1; dx <= 1; dx++) {
     for (let dy = -1; dy <= 1; dy++) {
@@ -42,11 +52,9 @@ function initGame(selectedGridSize) {
     offset = (gridSize - 1) / 2 * cellSize;
 
     if (scene) {
-        // シーンからすべてのオブジェクトを削除 (メモリリーク防止)
         while(scene.children.length > 0){
             scene.remove(scene.children[0]);
         }
-        // レンダラーのDOM要素を削除 (canvas要素)
         if (renderer && renderer.domElement.parentNode) {
             renderer.domElement.parentNode.removeChild(renderer.domElement);
         }
@@ -146,7 +154,7 @@ function initGame(selectedGridSize) {
         transparent: true,
         opacity: 0.5
     });
-    const pointsThicker = points.map(v => v.clone().multiplyScalar(1.01)); // 少し外側に拡大
+    const pointsThicker = points.map(v => v.clone().multiplyScalar(1.01));
     const outerBoxGeometryThicker = new THREE.BufferGeometry().setFromPoints(pointsThicker);
     outerBoxGeometryThicker.setIndex(indices);
     const outerBoxThicker = new THREE.LineSegments(outerBoxGeometryThicker, outerBoxMaterialThicker);
@@ -455,7 +463,6 @@ const handleGameClick = (event) => {
     }
 };
 
-// 駒をひっくり返すアニメーション関数
 function flipPieceVisual(x, y, z, newPlayer) {
     return new Promise(resolve => {
         const pieceToFlip = pieces.find(piece =>
@@ -482,13 +489,11 @@ function flipPieceVisual(x, y, z, newPlayer) {
             resolve: resolve
         });
 
-        // 盤面データを即座に更新 (アニメーション中もロジックは最新の状態を保持)
         board[x][y][z] = newPlayer;
         pieceToFlip.userData.player = newPlayer;
     });
 }
 
-// アニメーション処理を animate ループ内で実行
 let lastFrameTime = 0;
 function updateFlippingPieces(currentTime) {
     const stillFlipping = [];
@@ -496,24 +501,19 @@ function updateFlippingPieces(currentTime) {
         const elapsed = performance.now() - item.startTime;
         const progress = Math.min(elapsed / FLIP_DURATION, 1);
 
-        // 駒がくるっと回転するアニメーション
-        // progressが0.5を超えたあたりで色が変わるように
         if (progress < 0.5) {
-            // 前半: 回転のみ (色変更なし)
-            item.piece.rotation.y = Math.PI * progress * 2; // 0 -> PI (180度)
-            item.piece.material = item.originalMaterial; // 念のため元の色を維持
+            item.piece.rotation.y = Math.PI * progress * 2;
+            item.piece.material = item.originalMaterial;
         } else {
-            // 後半: 回転と色変更
-            item.piece.rotation.y = Math.PI * progress * 2; // PI -> 2PI (180度 -> 360度)
-            item.piece.material = item.targetMaterial; // 目標の色に設定
+            item.piece.rotation.y = Math.PI * progress * 2;
+            item.piece.material = item.targetMaterial;
         }
 
         if (progress < 1) {
             stillFlipping.push(item);
         } else {
-            // アニメーション完了
-            item.piece.rotation.y = 0; // 回転をリセット
-            item.resolve(); // Promiseを解決
+            item.piece.rotation.y = 0;
+            item.resolve();
         }
     });
     flippingPieces = stillFlipping;
@@ -547,14 +547,14 @@ function updateUI() {
     whiteScoreSpan.textContent = whiteCount;
 }
 
-function animate(currentTime) { // currentTimeを引数として受け取る
+function animate(currentTime) {
     requestAnimationFrame(animate);
 
-    const deltaTime = currentTime - lastFrameTime; // デルタタイム計算
+    const deltaTime = currentTime - lastFrameTime;
     lastFrameTime = currentTime;
 
     controls.update();
-    updateFlippingPieces(deltaTime); // 駒のアニメーションを更新
+    updateFlippingPieces(deltaTime);
     renderer.render(scene, camera);
 }
 
@@ -629,7 +629,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// ボードサイズ選択後の処理関数
 function selectBoardSize(size) {
     currentSelectedSize = size;
     const boardSizeSelection = document.getElementById('board-size-selection');
@@ -637,23 +636,22 @@ function selectBoardSize(size) {
     const startScreenTitle = document.getElementById('start-screen-title');
 
     if (boardSizeSelection) {
-        boardSizeSelection.style.display = 'none'; // ボードサイズ選択を非表示
+        boardSizeSelection.style.display = 'none';
     }
     if (difficultySelection) {
-        difficultySelection.style.display = 'block'; // 難易度選択を表示
+        difficultySelection.style.display = 'block';
     }
     if (startScreenTitle) {
-        startScreenTitle.textContent = `3D オセロ (${size}x${size}x${size})`; // タイトルを更新
+        startScreenTitle.textContent = `3D オセロ (${size}x${size}x${size})`;
     }
 }
 
-// 難易度選択後のゲーム開始処理関数
 function selectDifficultyAndStartGame(difficulty) {
     cpuDifficulty = difficulty;
     const startScreen = document.getElementById('start-screen');
 
     if (startScreen) {
-        startScreen.style.display = 'none'; // 開始画面を非表示
+        startScreen.style.display = 'none';
     }
     if (gameOverScreen) {
         gameOverScreen.style.display = 'none';
@@ -710,7 +708,6 @@ function showStartScreen() {
     updateUI();
 }
 
-// パスメッセージ表示関数
 function showPassMessage() {
     if (passMessageDiv) {
         passMessageDiv.style.display = 'block';
@@ -723,7 +720,6 @@ function showPassMessage() {
     }
 }
 
-// CPU思考中メッセージ表示関数
 function showCpuThinkingMessage() {
     if (cpuThinkingMessageDiv) {
         cpuThinkingMessageDiv.style.display = 'block';
@@ -732,14 +728,12 @@ function showCpuThinkingMessage() {
     }
 }
 
-// CPU思考中メッセージ非表示関数
 function hideCpuThinkingMessage() {
     if (cpuThinkingMessageDiv) {
         cpuThinkingMessageDiv.style.display = 'none';
     }
 }
 
-// ゲーム終了処理関数
 function endGame() {
     let blackCount = 0;
     let whiteCount = 0;
