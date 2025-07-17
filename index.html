@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3Dオセロ</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Arial', sans-serif; }
+        canvas { display: block; }
+
+        #ui-container {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 10;
+            font-size: 1.1em;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        #current-turn {
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        #score {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #score span {
+            margin: 0 5px;
+        }
+
+        .piece-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 5px;
+        }
+
+        .black-icon {
+            background-color: black;
+            border: 1px solid white;
+        }
+
+        .white-icon {
+            background-color: white;
+            border: 1px solid black;
+        }
+
+        /* ゲーム開始画面のスタイル */
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 20;
+            font-size: 1.5em;
+            text-align: center;
+        }
+        /* 難易度選択セクションは最初は非表示 */
+        #difficulty-selection {
+            display: none; /* JavaScriptで表示を切り替える */
+        }
+
+        #start-screen h1 {
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+
+        #start-screen .selection-section {
+            margin-bottom: 20px;
+        }
+
+        #start-screen button {
+            background-color: #4CAF50; /* 緑 */
+            color: white;
+            padding: 15px 30px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #start-screen button:hover {
+            background-color: #45a049;
+        }
+
+        /* リセットボタンのスタイル */
+        #reset-button {
+            background-color: #f44336; /* 赤 */
+            color: white;
+            padding: 10px 20px;
+            margin-top: 15px; /* UI要素との間隔 */
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #reset-button:hover {
+            background-color: #da190b;
+        }
+
+        /* メッセージ表示用の共通スタイル */
+        .message-overlay {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%); /* X軸中央揃え */
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 25px 40px;
+            border-radius: 10px;
+            font-size: 2.5em;
+            font-weight: bold;
+            text-align: center;
+            z-index: 30;
+            display: none; /* 初期状態では非表示 */
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            animation: fadeInOut 2s ease-in-out forwards; /* フェードイン・アウトのアニメーション */
+        }
+
+        /* パスメッセージのスタイル (中央) */
+        #pass-message {
+            top: 60%; /* 画面中央 */
+            transform: translate(-50%, -50%); /* 中央揃えを考慮 */
+        }
+
+        /* CPU思考中メッセージのスタイル (中央より少し下) */
+        #cpu-thinking-message {
+            top: 40%; /* 画面中央より少し下 */
+            transform: translate(-50%, -50%); /* 中央揃えを考慮 */
+        }
+
+        /* ゲーム終了画面のスタイル */
+        #game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: none; /* 初期状態では非表示 */
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 40;
+            font-size: 2em;
+            text-align: center;
+        }
+
+        #game-over-screen h2 {
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        #game-over-screen p {
+            margin-bottom: 30px;
+            font-size: 1em;
+        }
+
+        #game-over-screen button {
+            background-color: #007bff; /* 青 */
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #game-over-screen button:hover {
+            background-color: #0056b3;
+        }
+
+        /* フェードイン・アウトアニメーション */
+        @keyframes fadeInOut {
+            0% { opacity: 0; }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+    </style>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "/build/three.module.js"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="start-screen">
+        <h1 id="start-screen-title">3D オセロ</h1>
+        <div id="board-size-selection" class="selection-section">
+            <p>ボードサイズを選択してください:</p>
+            <div>
+                <button id="size-8x8x8" data-size="8">8x8x8</button>
+                <button id="size-6x6x6" data-size="6">6x6x6</button>
+                <button id="size-4x4x4" data-size="4">4x4x4</button>
+            </div>
+        </div>
+
+        <div id="difficulty-selection" class="selection-section">
+            <p>CPU難易度を選択してください:</p>
+            <div>
+                <button id="difficulty-easy" data-difficulty="1">レベル1</button>
+                <button id="difficulty-medium" data-difficulty="2">レベル2</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="ui-container">
+        <div id="current-turn">現在のターン: <span id="turn-color">黒</span></div>
+        <div id="score">
+            <div>
+                <span class="piece-icon black-icon"></span>
+                <span id="black-score">0</span>
+            </div>
+            <div>
+                <span class="piece-icon white-icon"></span>
+                <span id="white-score">0</span>
+            </div>
+        </div>
+        <button id="reset-button">リセット</button>
+    </div>
+
+    <div id="pass-message" class="message-overlay">パス！</div>
+
+    <div id="cpu-thinking-message" class="message-overlay">CPU思考中...</div>
+
+    <div id="game-over-screen">
+        <h2 id="game-over-title"></h2>
+        <p id="game-over-score"></p>
+        <button id="play-again-button">もう一度プレイ</button>
+    </div>
+
+    <script type="module" src="/main.js" defer></script>
+</body>
+</html>
