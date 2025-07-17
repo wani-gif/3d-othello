@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3Dオセロ</title>
-    <base href="/3d-othello/"> 
     <style>
         body { margin: 0; overflow: hidden; font-family: 'Arial', sans-serif; }
         canvas { display: block; }
@@ -208,7 +207,8 @@
     <script type="importmap">
         {
             "imports": {
-                "three": "/build/three.module.js"
+                // ★修正：リポジトリ名をパスの前に付ける★
+                "three": "/3d-othello/build/three.module.js"
             }
         }
     </script>
@@ -259,6 +259,6 @@
         <button id="play-again-button">もう一度プレイ</button>
     </div>
 
-    <script type="module" src="main.js" defer></script>
+    <script type="module" src="/3d-othello/main.js" defer></script>
 </body>
 </html>

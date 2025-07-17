@@ -1,8 +1,8 @@
 // main.js
 
-// 変更後：明示的に相対パス './' を追加
-import * as THREE from "./build/three.module.js"; // ★修正点: './' を追加★
-import { OrbitControls } from "./jsm/controls/OrbitControls.js"; // ★修正点: './' を追加★
+import * as THREE from "/3d-othello/build/three.module.js"; // ★修正：リポジトリ名をパスの前に付ける★
+import { OrbitControls } from "/3d-othello/jsm/controls/OrbitControls.js"; // ★修正：リポジトリ名をパスの前に付ける★
+
 // --- グローバル変数と初期設定 ---
 let scene, camera, renderer, controls;
 let gridSize = 8;
