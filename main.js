@@ -36,6 +36,12 @@ let placingPieces = [];
 const PLACE_ANIMATION_DURATION = 400; // 駒を置くアニメーションの長さ (ms)
 const BOUNCE_HEIGHT = 0.5; // 置く時のバウンド高さ
 
+// ★追加: ハイライトアニメーション用の変数★
+const HIGHLIGHT_ANIMATION_SPEED = 0.01; // ハイライトアニメーションの速度
+const HIGHLIGHT_SCALE_MIN = 0.4; // ハイライトの最小スケール (元のサイズに対する割合)
+const HIGHLIGHT_SCALE_MAX = 0.5; // ハイライトの最大スケール (元のサイズに対する割合)
+let highlightAnimationTime = 0; // ハイライトアニメーションの経過時間
+
 let passMessageDiv;
 let cpuThinkingMessageDiv;
 let gameOverScreen;
@@ -260,7 +266,8 @@ function initGame(selectedGridSize) {
         depthTest: false,
         depthWrite: false
     });
-    highlightGeometry = new THREE.BoxGeometry(cellSize * 0.5, cellSize * 0.5, cellSize * 0.5);
+    // ★ハイライトのジオメトリサイズを小さくする★
+    highlightGeometry = new THREE.BoxGeometry(cellSize * HIGHLIGHT_SCALE_MAX, cellSize * HIGHLIGHT_SCALE_MAX, cellSize * HIGHLIGHT_SCALE_MAX); // 初期サイズは最大スケールに設定
 
     highlightMeshes = [];
 
@@ -417,6 +424,13 @@ function updatePossibleMoves() {
     });
 }
 
+// ★追加: ハイライトを消去するヘルパー関数★
+function clearHighlights() {
+    highlightMeshes.forEach(mesh => scene.remove(mesh));
+    highlightMeshes.length = 0;
+    currentPossibleMoves.length = 0; // 可能な手もクリア
+}
+
 // --- 駒をひっくり返すアニメーションを更新する関数 (animate関数より上に移動) ---
 function updateFlippingPieces(currentTime) {
     const stillFlipping = [];
@@ -425,8 +439,8 @@ function updateFlippingPieces(currentTime) {
         const progress = Math.min(elapsed / FLIP_DURATION, 1);
 
         // Y軸方向のバウンドアニメーションを追加
-        // 0から1まで上昇し、1から0まで下降するようなカーブ
-        const yOffset = FLIP_BOUNCE_HEIGHT * Math.sin(progress * Math.PI); // progress 0から1でsin(0)からsin(PI)へ、0から1まで上がりまた0へ
+        // progress 0から1でsin(0)からsin(PI)へ、0から1まで上がりまた0へ
+        const yOffset = FLIP_BOUNCE_HEIGHT * Math.sin(progress * Math.PI); 
 
         item.piece.rotation.y = Math.PI * progress * 2; // Y軸を中心に回転
         item.piece.position.y = item.targetY + yOffset; // Y位置を更新
@@ -456,12 +470,9 @@ function updatePlacingPieces(currentTime) {
         const progress = Math.min(elapsed / PLACE_ANIMATION_DURATION, 1);
 
         // バウンドのアニメーションカーブ (例: 放物線)
-        // progress * (2 - progress) は 0から1まで上昇し、1から0まで下降するようなカーブ (放物線の上半分)
-        // これを1から0の動きとして使い、バウンドの高さを調整
-        const yOffset = BOUNCE_HEIGHT * Math.sin(progress * Math.PI); // progress 0から1でsin(0)からsin(PI)へ、0から1まで上がりまた0へ
+        const yOffset = BOUNCE_HEIGHT * Math.sin(progress * Math.PI); 
 
         // 駒のY位置を更新
-        // 目標位置 + バウンドのオフセット
         item.piece.position.y = item.targetY + yOffset;
 
         if (progress < 1) {
@@ -472,6 +483,19 @@ function updatePlacingPieces(currentTime) {
         }
     });
     placingPieces = stillPlacing;
+}
+
+// ★追加: ハイライトの拡大縮小アニメーションを更新する関数★
+function updateHighlightAnimation(currentTime) {
+    highlightAnimationTime = currentTime * HIGHLIGHT_ANIMATION_SPEED; // 時間をアニメーション速度で調整
+    
+    // Sin波を使ってスケールを周期的に変化させる
+    // sin波は -1 から 1 の範囲で変化するので、それを MIN から MAX の範囲にマッピングする
+    const scale = HIGHLIGHT_SCALE_MIN + (HIGHLIGHT_SCALE_MAX - HIGHLIGHT_SCALE_MIN) * ((Math.sin(highlightAnimationTime) + 1) / 2);
+
+    highlightMeshes.forEach(mesh => {
+        mesh.scale.setScalar(scale); // 全ての軸で同じスケールを適用
+    });
 }
 
 // --- アニメーションループ ---
@@ -485,6 +509,7 @@ function animate(currentTime) {
     controls.update();
     updateFlippingPieces(currentTime);
     updatePlacingPieces(currentTime);
+    updateHighlightAnimation(currentTime); // ★ハイライトアニメーション更新を呼び出す★
     renderer.render(scene, camera);
 }
 
@@ -587,6 +612,9 @@ function cpuMove() {
         placePiece(selectedMove.x, selectedMove.y, selectedMove.z, CPU_PLAYER);
         console.log(`CPU placed piece at: (${selectedMove.x}, ${selectedMove.y}, ${selectedMove.z})`);
 
+        // ★追加: 駒を置いた瞬間にハイライトを消す★
+        clearHighlights();
+
         // 盤面データ上の駒の色を即座に更新 (既に計算済みの flippablePiecesForActualMove を使用)
         flippablePiecesForActualMove.forEach(coord => {
             board[coord.x][coord.y][coord.z] = CPU_PLAYER;
@@ -638,6 +666,9 @@ const handleGameClick = (event) => {
         if (flippablePieces.length > 0) {
             placePiece(x, y, z, currentPlayer);
             console.log(`Placed ${currentPlayer === -1 ? '黒' : '白'} piece at: (${x}, ${y}, ${z})`);
+
+            // ★追加: 駒を置いた瞬間にハイライトを消す★
+            clearHighlights();
 
             flippablePieces.forEach(coord => {
                 board[coord.x][coord.y][coord.z] = currentPlayer;
