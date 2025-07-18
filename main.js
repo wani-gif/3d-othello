@@ -37,10 +37,13 @@ const PLACE_ANIMATION_DURATION = 400; // 駒を置くアニメーションの長
 const BOUNCE_HEIGHT = 0.5; // 置く時のバウンド高さ
 
 // ★追加: ハイライトアニメーション用の変数★
-const HIGHLIGHT_ANIMATION_SPEED = 0.01; // ハイライトアニメーションの速度
+const HIGHLIGHT_ANIMATION_SPEED = 0.005; // ハイライトアニメーションの速度
 const HIGHLIGHT_SCALE_MIN = 0.4; // ハイライトの最小スケール (元のサイズに対する割合)
-const HIGHLIGHT_SCALE_MAX = 0.5; // ハイライトの最大スケール (元のサイズに対する割合)
+const HIGHLIGHT_SCALE_MAX = 0.6; // ハイライトの最大スケール (元のサイズに対する割合)
 let highlightAnimationTime = 0; // ハイライトアニメーションの経過時間
+
+// ★追加: 連続パスのカウント用変数★
+let consecutivePasses = 0;
 
 let passMessageDiv;
 let cpuThinkingMessageDiv;
@@ -273,6 +276,9 @@ function initGame(selectedGridSize) {
 
     isCpuTurn = false;
 
+    // ★連続パスのカウントを初期化★
+    consecutivePasses = 0;
+
     animate();
 }
 
@@ -316,6 +322,9 @@ function placePiece(x, y, z, player) {
         initialY: targetYPosition + BOUNCE_HEIGHT,
         targetY: targetYPosition
     });
+
+    // ★駒が置かれたら連続パスをリセット★
+    consecutivePasses = 0;
 }
 
 function getFlippablePieces(currentBoard, x, y, z, player) {
@@ -524,6 +533,15 @@ function checkAndAdvanceTurn() {
         console.log(`Player ${currentPlayer === -1 ? '黒' : '白'} has no moves. Attempting to pass turn.`);
         showPassMessage(); // パスメッセージ表示
 
+        consecutivePasses++; // ★連続パスのカウントを増やす★
+
+        if (consecutivePasses >= 2) { // ★連続パスが2回以上の場合、ゲーム終了★
+            console.log("Two consecutive passes. Game Over!");
+            endGame();
+            isCpuTurn = false; // ゲーム終了時はCPUターンではない
+            return; // ゲーム終了のため、以降の処理は行わない
+        }
+
         const prevPlayer = currentPlayer; // パスする前のプレイヤーを保存
         currentPlayer *= -1; // ターンを相手に渡す
 
@@ -544,10 +562,10 @@ function checkAndAdvanceTurn() {
         }
 
         if (!opponentHasMoves) {
-            // 両者パスでゲーム終了
+            // ここは基本的には連続パス2回で終了するロジックでカバーされるが、念のため残す
             console.log("Both players passed. Game Over!");
             endGame();
-            isCpuTurn = false; // ゲーム終了時はCPUターンではない
+            isCpuTurn = false;
         } else {
             // 相手は動けるので、ゲーム続行（必要ならCPUターンをトリガー）
             console.log(`Player ${currentPlayer === -1 ? '黒' : '白'} has moves. Game continues after a pass.`);
@@ -561,6 +579,7 @@ function checkAndAdvanceTurn() {
         }
     } else {
         // 可能な手がある場合、通常のターン進行
+        consecutivePasses = 0; // ★駒を置けたので連続パスをリセット★
         console.log(`Possible moves for ${currentPlayer === -1 ? '黒' : '白'}:`, currentPossibleMoves.length, currentPossibleMoves);
         if (currentPlayer === CPU_PLAYER) {
             isCpuTurn = true;
@@ -927,6 +946,8 @@ function showStartScreen() {
     currentPlayer = -1;
     isCpuTurn = false;
     currentPossibleMoves = [];
+    // ★連続パスのカウントもリセット★
+    consecutivePasses = 0;
     updateUI();
 }
 
