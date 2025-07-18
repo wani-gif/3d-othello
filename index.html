@@ -79,6 +79,10 @@
         #difficulty-selection {
             display: none; /* JavaScriptで表示を切り替える */
         }
+        /* 先行プレイヤー選択セクションは削除のため、ここも不要になります */
+        /* #first-player-selection {
+            display: none;
+        } */
 
         #start-screen h1 {
             margin-bottom: 30px;
@@ -150,6 +154,14 @@
         #cpu-thinking-message {
             top: 60%; /* 画面中央より少し下 */
             transform: translate(-50%, -50%); /* 中央揃えを考慮 */
+        }
+
+        /* 先行プレイヤーメッセージのスタイル (中央) */
+        #first-player-message {
+            top: 50%; /* 画面中央 */
+            transform: translate(-50%, -50%); /* 中央揃えを考慮 */
+            font-size: 2em; /* 他のメッセージより少し小さめ */
+            padding: 20px 30px;
         }
 
         /* ゲーム終了画面のスタイル */
@@ -232,7 +244,8 @@
                 <button id="difficulty-medium" data-difficulty="2">レベル2</button>
             </div>
         </div>
-    </div>
+
+        </div>
 
     <div id="ui-container">
         <div id="current-turn">現在のターン: <span id="turn-color">黒</span></div>
@@ -253,7 +266,7 @@
 
     <div id="cpu-thinking-message" class="message-overlay">CPU思考中...</div>
 
-    <div id="game-over-screen">
+    <div id="first-player-message" class="message-overlay"></div> <div id="game-over-screen">
         <h2 id="game-over-title"></h2>
         <p id="game-over-score"></p>
         <button id="play-again-button">もう一度プレイ</button>
