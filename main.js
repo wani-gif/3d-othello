@@ -1,19 +1,20 @@
 // main.js
 
-import * as THREE from "/3d-othello/build/three.module.js"; // ★修正：リポジトリ名をパスの前に付ける★
-import { OrbitControls } from "/3d-othello/jsm/controls/OrbitControls.js"; // ★修正：リポジトリ名をパスの前に付ける★
+// ★変更なし: import文はそのまま★
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 // --- グローバル変数と初期設定 ---
-let scene, camera, renderer, controls;
-let gridSize = 8;
-let cellSize = 1;
-let offset;
-let cells = [];
-let board = [];
-let pieceGeometry, blackMaterial, whiteMaterial;
-let pieces = [];
-let highlightMaterial, highlightGeometry;
-let highlightMeshes = [];
+let scene, camera, renderer, controls; // Three.jsの主要な要素
+let gridSize = 8; // 現在のボードサイズ (初期値)
+let cellSize = 1; // 各マス目のサイズ
+let offset; // グリッドの中心を計算するためのオフセット
+let cells = []; // Three.jsのグリッドセル（Meshオブジェクトの配列）
+let board = []; // 盤面状態管理用3次元配列 (0:空, 1:白, -1:黒)
+let pieceGeometry, blackMaterial, whiteMaterial; // 駒の形状と材質
+let pieces = []; // シーン上のすべての駒のThree.jsオブジェクト
+let highlightMaterial, highlightGeometry; // ハイライトの材質と形状
+let highlightMeshes = []; // シーン上のハイライト用メッシュの配列
 let currentPlayer = -1; // -1:黒, 1:白
 let currentPossibleMoves = [];
 let isOrbiting = false;
@@ -38,7 +39,7 @@ const directions = [];
 for (let dx = -1; dx <= 1; dx++) {
     for (let dy = -1; dy <= 1; dy++) {
         for (let dz = -1; dz <= 1; dz++) {
-            if (dx === 0 && dy === 0 && dz === 0) continue;
+            if (dx === 0 && dy === 0 && dz === 0) continue; // 自分自身はスキップ
             directions.push({ dx, dy, dz });
         }
     }
@@ -52,9 +53,11 @@ function initGame(selectedGridSize) {
     offset = (gridSize - 1) / 2 * cellSize;
 
     if (scene) {
+        // シーンからすべてのオブジェクトを削除 (メモリリーク防止)
         while(scene.children.length > 0){
             scene.remove(scene.children[0]);
         }
+        // レンダラーのDOM要素を削除 (canvas要素)
         if (renderer && renderer.domElement.parentNode) {
             renderer.domElement.parentNode.removeChild(renderer.domElement);
         }
@@ -77,7 +80,9 @@ function initGame(selectedGridSize) {
     directionalLight.position.set(offset + 2, offset + 5, offset + 4).normalize();
     scene.add(directionalLight);
 
-    controls = new OrbitControls(camera, renderer.domElement);
+    // Three.jsのオブジェクトは全てグローバル変数THREEからアクセス
+    // OrbitControlsはTHREEのグローバルオブジェクトに直接追加される
+    controls = new OrbitControls(camera, renderer.domElement); 
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
     controls.addEventListener('start', () => { isOrbiting = true; });
@@ -142,7 +147,7 @@ function initGame(selectedGridSize) {
     const outerBoxGeometry = new THREE.BufferGeometry().setFromPoints(points);
     outerBoxGeometry.setIndex(indices);
     const outerBoxMaterial = new THREE.LineBasicMaterial({
-        color: 0x00ff00, // 緑色
+        color: 0x00ff00,
         transparent: true,
         opacity: 0.5
     });
@@ -150,7 +155,7 @@ function initGame(selectedGridSize) {
     scene.add(outerBox);
 
     const outerBoxMaterialThicker = new THREE.LineBasicMaterial({
-        color: 0x00ff00, // 緑色
+        color: 0x00ff00,
         transparent: true,
         opacity: 0.5
     });
@@ -186,7 +191,7 @@ function initGame(selectedGridSize) {
         color: 0xffff00, // 黄色
         transparent: true,
         opacity: 0.4,
-        depthTest: false, // 常に手前に透けて見える
+        depthTest: false,
         depthWrite: false
     });
     highlightGeometry = new THREE.BoxGeometry(cellSize * 0.5, cellSize * 0.5, cellSize * 0.5);
@@ -310,17 +315,17 @@ function updatePossibleMoves() {
         highlightMesh.userData.boardZ = move.z;
         highlightMesh.userData.isHighlight = true;
         highlightMesh.renderOrder = 1;
-        highlightMesh.material.depthTest = false; // 常に手前に描画されるように深度テストを無効にする
+        highlightMesh.material.depthTest = false;
         scene.add(highlightMesh);
         highlightMeshes.push(highlightMesh);
     });
 
     if (currentPossibleMoves.length === 0) {
         console.log(`Player ${currentPlayer === -1 ? '黒' : '白'} has no moves. Attempting to pass turn.`);
-        showPassMessage(); // パスメッセージ表示
+        showPassMessage();
 
-        currentPlayer *= -1; // プレイヤーを交代
-        updateUI(); // UIも一旦更新
+        currentPlayer *= -1;
+        updateUI();
 
         let opponentHasMoves = false;
         for (let x = 0; x < gridSize; x++) {
@@ -339,14 +344,14 @@ function updatePossibleMoves() {
 
         if (!opponentHasMoves) {
             console.log("Both players passed. Game Over!");
-            endGame(); // ゲーム終了処理を呼び出し
-            isCpuTurn = false; // CPUのターンフラグもリセット
+            endGame();
+            isCpuTurn = false;
         } else {
             console.log(`Player ${currentPlayer === -1 ? '黒' : '白'} has moves. Game continues.`);
             
             if (currentPlayer === CPU_PLAYER) {
                 isCpuTurn = true;
-                showCpuThinkingMessage(); // CPU思考中メッセージ表示
+                showCpuThinkingMessage();
                 setTimeout(cpuMove, 1000);
             } else {
                 isCpuTurn = false;
@@ -357,7 +362,7 @@ function updatePossibleMoves() {
     } else {
         if (currentPlayer === CPU_PLAYER) {
             isCpuTurn = true;
-            showCpuThinkingMessage(); // CPU思考中メッセージ表示
+            showCpuThinkingMessage();
             setTimeout(cpuMove, 1000);
         } else {
             isCpuTurn = false;
@@ -369,7 +374,7 @@ function updatePossibleMoves() {
 }
 
 function cpuMove() {
-    hideCpuThinkingMessage(); // CPU思考中メッセージを非表示
+    hideCpuThinkingMessage();
 
     if (currentPossibleMoves.length > 0) {
         let selectedMove;
@@ -525,9 +530,9 @@ function updateUI() {
     const blackScoreSpan = document.getElementById('black-score');
     const whiteScoreSpan = document.getElementById('white-score');
 
-    turnColorSpan.textContent = currentPlayer === -1 ? '黒' : '白';
-    turnColorSpan.style.color = currentPlayer === -1 ? 'black' : 'white';
-    turnColorSpan.style.textShadow = currentPlayer === -1 ? '1px 1px 2px white' : '1px 1px 2px black';
+    if (turnColorSpan) turnColorSpan.textContent = currentPlayer === -1 ? '黒' : '白';
+    if (turnColorSpan) turnColorSpan.style.color = currentPlayer === -1 ? 'black' : 'white';
+    if (turnColorSpan) turnColorSpan.style.textShadow = currentPlayer === -1 ? '1px 1px 2px white' : '1px 1px 2px black';
 
     let blackCount = 0;
     let whiteCount = 0;
@@ -543,8 +548,8 @@ function updateUI() {
         }
     }
 
-    blackScoreSpan.textContent = blackCount;
-    whiteScoreSpan.textContent = whiteCount;
+    if (blackScoreSpan) blackScoreSpan.textContent = blackCount;
+    if (whiteScoreSpan) whiteScoreSpan.textContent = whiteCount;
 }
 
 function animate(currentTime) {
@@ -695,7 +700,10 @@ function showStartScreen() {
         }
     }
     if (renderer && renderer.domElement.parentNode) {
-        renderer.domElement.parentNode.removeChild(renderer.domElement);
+        renderer.domElement.parentNode.parentNode.removeChild(renderer.domElement.parentNode); // 親ノードを削除
+        renderer = null;
+    } else if (renderer) { // renderer.domElement.parentNode がない場合 (初めての起動時など)
+        document.body.removeChild(renderer.domElement);
         renderer = null;
     }
     board = [];
